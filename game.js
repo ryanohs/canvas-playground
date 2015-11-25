@@ -48,8 +48,8 @@ var Game = function(canvas, instance, fps){
     isMouseDown = true;
     e.preventDefault();
     var mouse = {
-      x: e.pageX || e.touches[0].pageX - canvas.offsetLeft,
-      y: e.pageY || e.touches[0].pageY - canvas.offsetTop,
+      x: (e.pageX || e.touches[0].pageX) - canvas.offsetLeft,
+      y: (e.pageY || e.touches[0].pageY) - canvas.offsetTop,
       isMouseDown: isMouseDown
     };
     if(instance.mouseDown) instance.mouseDown(mouse);
@@ -59,8 +59,8 @@ var Game = function(canvas, instance, fps){
     isMouseDown = false;
     e.preventDefault();
     var mouse = {
-      x: e.pageX || e.touches[0].pageX - canvas.offsetLeft,
-      y: e.pageY || e.touches[0].pageY - canvas.offsetTop,
+      x: (e.pageX || e.touches[0].pageX) - canvas.offsetLeft,
+      y: (e.pageY || e.touches[0].pageY) - canvas.offsetTop,
       isMouseDown: isMouseDown
     };
     if(instance.mouseUp) instance.mouseUp(mouse);
@@ -69,8 +69,8 @@ var Game = function(canvas, instance, fps){
   var mouseXY = e => {
     e.preventDefault();
     var mouse = {
-      x: e.pageX || e.touches[0].pageX - canvas.offsetLeft,
-      y: e.pageY || e.touches[0].pageY - canvas.offsetTop,
+      x: (e.pageX || e.touches[0].pageX) - canvas.offsetLeft,
+      y: (e.pageY || e.touches[0].pageY) - canvas.offsetTop,
       isMouseDown: isMouseDown
     };
     if(instance.mouseXY) instance.mouseXY(mouse);
