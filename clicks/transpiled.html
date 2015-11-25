@@ -1,0 +1,245 @@
+<html>
+<head>
+  <style>
+    html, body { width:100%; height:100%; margin:0; padding: 0; }
+    canvas { display:block; }
+    image, canvas { user-select: none; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <script>
+"use strict";
+
+var Game = function Game(canvas, instance, fps) {
+  // inject self
+  instance.game = this;
+
+  var draw = function draw() {
+    setTimeout(function () {
+      requestAnimationFrame(draw);
+      step();
+      render();
+    }, 1000 / fps);
+  };
+
+  var step = function step() {
+    instance.step();
+  };
+
+  var render = function render() {
+    instance.render();
+  };
+
+  this.run = function () {
+    instance.start();
+    draw();
+  };
+
+  this.over = function () {
+    gameOver = true;
+    setTimeout(function () {
+      gameOver = false;
+      instance.start();
+    }, 3000);
+  };
+
+  this.won = function () {
+    gameWon = true;
+    setTimeout(function () {
+      gameWon = false;
+      instance.start();
+    }, 5000);
+  };
+
+  if (instance.keydown) document.addEventListener("keydown", instance.keydown);
+  if (instance.keyup) document.addEventListener("keyup", instance.keyup);
+
+  var isMouseDown = false;
+  var lastMousePosition = {};
+
+  var mouseDown = function mouseDown(e) {
+    isMouseDown = true;
+    e.preventDefault();
+    var mouse = {
+      x: (e.touches !== undefined ? e.touches[0].pageX : e.pageX) - canvas.offsetLeft,
+      y: (e.touches !== undefined ? e.touches[0].pageY : e.pageY) - canvas.offsetTop,
+      isMouseDown: isMouseDown
+    };
+    if (instance.mouseDown) instance.mouseDown(mouse);
+  };
+
+  var mouseUp = function mouseUp(e) {
+    isMouseDown = false;
+    e.preventDefault();
+    var mouse = {
+      x: (e.touches !== undefined ? lastMousePosition.x : e.pageX) - canvas.offsetLeft,
+      y: (e.touches !== undefined ? lastMousePosition.y : e.pageY) - canvas.offsetTop,
+      isMouseDown: isMouseDown
+    };
+    if (instance.mouseUp) instance.mouseUp(mouse);
+  };
+
+  var mouseXY = function mouseXY(e) {
+    e.preventDefault();
+    var mouse = {
+      x: (e.touches !== undefined ? e.touches[0].pageX : e.pageX) - canvas.offsetLeft,
+      y: (e.touches !== undefined ? e.touches[0].pageY : e.pageY) - canvas.offsetTop,
+      isMouseDown: isMouseDown
+    };
+    lastMousePosition.x = mouse.x;
+    lastMousePosition.y = mouse.y;
+    if (instance.mouseXY) instance.mouseXY(mouse);
+  };
+
+  canvas.addEventListener("mousedown", mouseDown, false);
+  canvas.addEventListener("touchstart", mouseDown, false);
+  canvas.addEventListener("mousemove", mouseXY, false);
+  canvas.addEventListener("touchmove", mouseXY, false);
+  canvas.addEventListener("mouseup", mouseUp, false);
+  canvas.addEventListener("touchend", mouseUp, false);
+  canvas.addEventListener("touchcancel", mouseUp, false);
+
+  canvas.ondragstart = function (e) {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
+    return false;
+  };
+
+  canvas.onselectstart = function (e) {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
+    return false;
+  };
+
+  // prevent mobile scaling?
+  document.body.ontouchstart = function (e) {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
+    return false;
+  };
+  document.body.ontouchmove = function (e) {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
+    return false;
+  };
+};
+
+
+var canvas = document.getElementById("canvas");
+window.addEventListener("resize", resizeCanvas, false);
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+var scene = canvas.getContext("2d");
+
+function random(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+var Circle = function Circle(x, y, color) {
+  var _this = this;
+
+  this.x = x;
+  this.y = y;
+  this.r = 2;
+  this.maxr = 60;
+  this.remove = false;
+
+  this.step = function () {
+    _this.r++;
+    if (_this.r > _this.maxr) {
+      _this.remove = true;
+    }
+  };
+
+  this.render = function () {
+    scene.beginPath();
+    scene.arc(_this.x, _this.y, _this.r, 0, 2 * Math.PI, false);
+    scene.strokeStyle = color;
+    scene.lineWidth = 2;
+    scene.stroke();
+    scene.closePath();
+  };
+};
+
+var Clicks = function Clicks(dots) {
+  var _this2 = this;
+
+  this.game; // injected
+
+  var objects = [];
+
+  this.mouseDown = function (mouse) {
+    _this2.mouseXY(mouse);
+  };
+  this.mouseXY = function (mouse) {
+    if (mouse.isMouseDown) {
+      objects.push(new Circle(mouse.x, mouse.y, "green"));
+    }
+  };
+
+  this.keydown = function (e) {
+    switch (e.keyCode) {
+      case 37:
+        _this2.left();
+        break;
+      case 38:
+        _this2.up();
+        break;
+      case 39:
+        _this2.right();
+        break;
+      case 40:
+        _this2.down();
+        break;
+    }
+  };
+
+  this.step = function () {
+    objects.forEach(function (o) {
+      return o.step();
+    });
+    objects = objects.filter(function (o) {
+      return !o.remove;
+    });
+  };
+
+  this.render = function () {
+    scene.fillStyle = "#ccc";
+    scene.fillRect(0, 0, canvas.width, canvas.height);
+    objects.forEach(function (o) {
+      return o.render();
+    });
+  };
+
+  this.start = function () {
+    // todo
+  };
+};
+
+var clicks = new Clicks(scene);
+var game = new Game(canvas, clicks, 60);
+
+game.run();
+</script>
+</body>
+</html>
