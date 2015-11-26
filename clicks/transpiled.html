@@ -161,8 +161,11 @@ var Circle = function Circle(x, y, color) {
   this.x = x;
   this.y = y;
   this.r = 2;
-  this.maxr = 60;
+  this.maxr = 120;
   this.remove = false;
+
+  this.colorStepS = (100 - color.s) / this.maxr;
+  this.colorStepL = (100 - color.l) / this.maxr;
 
   this.step = function () {
     _this.r++;
@@ -174,7 +177,8 @@ var Circle = function Circle(x, y, color) {
   this.render = function () {
     scene.beginPath();
     scene.arc(_this.x, _this.y, _this.r, 0, 2 * Math.PI, false);
-    scene.strokeStyle = color;
+    var hsl = "hsl(" + color.h + ", " + (color.s + _this.colorStepS * _this.r) + "%, " + (color.l + _this.colorStepL * _this.r) + "%)";
+    scene.strokeStyle = hsl;
     scene.lineWidth = 2;
     scene.stroke();
     scene.closePath();
@@ -187,30 +191,17 @@ var Clicks = function Clicks(dots) {
   this.game; // injected
 
   var objects = [];
+  var hue = 180;
 
   this.mouseDown = function (mouse) {
     _this2.mouseXY(mouse);
   };
+
   this.mouseXY = function (mouse) {
     if (mouse.isMouseDown) {
-      objects.push(new Circle(mouse.x, mouse.y, "green"));
-    }
-  };
-
-  this.keydown = function (e) {
-    switch (e.keyCode) {
-      case 37:
-        _this2.left();
-        break;
-      case 38:
-        _this2.up();
-        break;
-      case 39:
-        _this2.right();
-        break;
-      case 40:
-        _this2.down();
-        break;
+      var color = { h: hue++, s: 75, l: 75 };
+      if (hue == 360) hue = 0;
+      objects.push(new Circle(mouse.x, mouse.y, color));
     }
   };
 
@@ -224,8 +215,7 @@ var Clicks = function Clicks(dots) {
   };
 
   this.render = function () {
-    scene.fillStyle = "#ccc";
-    scene.fillRect(0, 0, canvas.width, canvas.height);
+    scene.clearRect(0, 0, canvas.width, canvas.height);
     objects.forEach(function (o) {
       return o.render();
     });
