@@ -1,13 +1,31 @@
-var Game = function(canvas, instance, fps){
+var Game = function(canvas, instance, stepsPerSecond){
   // inject self
   instance.game = this;
 
+  var scene = canvas.getContext("2d");
+  var accumulator = 0, fps = 0;
+  var lastCalledTime = Date.now();
+  var stepDuration = 1/stepsPerSecond;
+  var showFps = false;
+
   var draw = () => {
-    setTimeout(() => {
-        requestAnimationFrame(draw);
-        step();
-        render();
-    }, 1000 / fps);
+    var now = Date.now();
+    var delta = (now - lastCalledTime)/1000;
+    lastCalledTime = now;
+    fps = 1/delta;
+    accumulator += delta;
+    if(accumulator > stepDuration)
+    {
+      accumulator -= stepDuration;
+      step();
+      render();
+      if(showFps)
+      {
+        scene.font = "14px Arial";
+        scene.fillText(fps.toFixed(2) + " fps",5,20);
+      }
+    }
+    requestAnimationFrame(draw);
   };
 
   var step = () => {
@@ -20,7 +38,7 @@ var Game = function(canvas, instance, fps){
 
   this.run = () => {
     instance.start();
-    draw();
+    requestAnimationFrame(draw);
   };
 
   this.over = () => {
@@ -41,6 +59,10 @@ var Game = function(canvas, instance, fps){
 
   if(instance.keydown) document.addEventListener("keydown", instance.keydown);
   if(instance.keyup) document.addEventListener("keyup", instance.keyup);
+
+  document.addEventListener("keydown", e => {
+    if(e.keyCode == 27) showFps = !showFps;
+  });
 
   var isMouseDown = false;
   var lastMousePosition = {};

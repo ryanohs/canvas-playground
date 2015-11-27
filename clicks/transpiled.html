@@ -9,227 +9,243 @@
 <body>
   <canvas id="canvas"></canvas>
   <script>
-"use strict";
+  "use strict";
 
-var Game = function Game(canvas, instance, fps) {
-  // inject self
-  instance.game = this;
+  var Game = function Game(canvas, instance, stepsPerSecond) {
+    // inject self
+    instance.game = this;
 
-  var draw = function draw() {
-    setTimeout(function () {
+    var scene = canvas.getContext("2d");
+    var accumulator = 0,
+        fps = 0;
+    var lastCalledTime = Date.now();
+    var stepDuration = 1 / stepsPerSecond;
+    var showFps = false;
+
+    var draw = function draw() {
+      var now = Date.now();
+      var delta = (now - lastCalledTime) / 1000;
+      lastCalledTime = now;
+      fps = 1 / delta;
+      accumulator += delta;
+      if (accumulator > stepDuration) {
+        accumulator -= stepDuration;
+        step();
+        render();
+        if (showFps) {
+          scene.font = "14px Arial";
+          scene.fillText(fps.toFixed(2) + " fps", 5, 20);
+        }
+      }
       requestAnimationFrame(draw);
-      step();
-      render();
-    }, 1000 / fps);
-  };
+    };
 
-  var step = function step() {
-    instance.step();
-  };
+    var step = function step() {
+      instance.step();
+    };
 
-  var render = function render() {
-    instance.render();
-  };
+    var render = function render() {
+      instance.render();
+    };
 
-  this.run = function () {
-    instance.start();
-    draw();
-  };
-
-  this.over = function () {
-    gameOver = true;
-    setTimeout(function () {
-      gameOver = false;
+    this.run = function () {
       instance.start();
-    }, 3000);
-  };
-
-  this.won = function () {
-    gameWon = true;
-    setTimeout(function () {
-      gameWon = false;
-      instance.start();
-    }, 5000);
-  };
-
-  if (instance.keydown) document.addEventListener("keydown", instance.keydown);
-  if (instance.keyup) document.addEventListener("keyup", instance.keyup);
-
-  var isMouseDown = false;
-  var lastMousePosition = {};
-
-  var mouseDown = function mouseDown(e) {
-    isMouseDown = true;
-    e.preventDefault();
-    var mouse = {
-      x: (e.touches !== undefined ? e.touches[0].pageX : e.pageX) - canvas.offsetLeft,
-      y: (e.touches !== undefined ? e.touches[0].pageY : e.pageY) - canvas.offsetTop,
-      isMouseDown: isMouseDown
+      requestAnimationFrame(draw);
     };
-    if (instance.mouseDown) instance.mouseDown(mouse);
-  };
 
-  var mouseUp = function mouseUp(e) {
-    isMouseDown = false;
-    e.preventDefault();
-    var mouse = {
-      x: (e.touches !== undefined ? lastMousePosition.x : e.pageX) - canvas.offsetLeft,
-      y: (e.touches !== undefined ? lastMousePosition.y : e.pageY) - canvas.offsetTop,
-      isMouseDown: isMouseDown
+    this.over = function () {
+      gameOver = true;
+      setTimeout(function () {
+        gameOver = false;
+        instance.start();
+      }, 3000);
     };
-    if (instance.mouseUp) instance.mouseUp(mouse);
-  };
 
-  var mouseXY = function mouseXY(e) {
-    e.preventDefault();
-    var mouse = {
-      x: (e.touches !== undefined ? e.touches[0].pageX : e.pageX) - canvas.offsetLeft,
-      y: (e.touches !== undefined ? e.touches[0].pageY : e.pageY) - canvas.offsetTop,
-      isMouseDown: isMouseDown
+    this.won = function () {
+      gameWon = true;
+      setTimeout(function () {
+        gameWon = false;
+        instance.start();
+      }, 5000);
     };
-    lastMousePosition.x = mouse.x;
-    lastMousePosition.y = mouse.y;
-    if (instance.mouseXY) instance.mouseXY(mouse);
-  };
 
-  canvas.addEventListener("mousedown", mouseDown, false);
-  canvas.addEventListener("touchstart", mouseDown, false);
-  canvas.addEventListener("mousemove", mouseXY, false);
-  canvas.addEventListener("touchmove", mouseXY, false);
-  canvas.addEventListener("mouseup", mouseUp, false);
-  canvas.addEventListener("touchend", mouseUp, false);
-  canvas.addEventListener("touchcancel", mouseUp, false);
+    if (instance.keydown) document.addEventListener("keydown", instance.keydown);
+    if (instance.keyup) document.addEventListener("keyup", instance.keyup);
 
-  canvas.ondragstart = function (e) {
-    if (e && e.preventDefault) {
+    document.addEventListener("keydown", function (e) {
+      if (e.keyCode == 27) showFps = !showFps;
+    });
+
+    var isMouseDown = false;
+    var lastMousePosition = {};
+
+    var mouseDown = function mouseDown(e) {
+      isMouseDown = true;
       e.preventDefault();
-    }
-    if (e && e.stopPropagation) {
-      e.stopPropagation();
-    }
-    return false;
-  };
+      var mouse = {
+        x: (e.touches !== undefined ? e.touches[0].pageX : e.pageX) - canvas.offsetLeft,
+        y: (e.touches !== undefined ? e.touches[0].pageY : e.pageY) - canvas.offsetTop,
+        isMouseDown: isMouseDown
+      };
+      if (instance.mouseDown) instance.mouseDown(mouse);
+    };
 
-  canvas.onselectstart = function (e) {
-    if (e && e.preventDefault) {
+    var mouseUp = function mouseUp(e) {
+      isMouseDown = false;
       e.preventDefault();
-    }
-    if (e && e.stopPropagation) {
-      e.stopPropagation();
-    }
-    return false;
-  };
+      var mouse = {
+        x: (e.touches !== undefined ? lastMousePosition.x : e.pageX) - canvas.offsetLeft,
+        y: (e.touches !== undefined ? lastMousePosition.y : e.pageY) - canvas.offsetTop,
+        isMouseDown: isMouseDown
+      };
+      if (instance.mouseUp) instance.mouseUp(mouse);
+    };
 
-  // prevent mobile scaling?
-  document.body.ontouchstart = function (e) {
-    if (e && e.preventDefault) {
+    var mouseXY = function mouseXY(e) {
       e.preventDefault();
-    }
-    if (e && e.stopPropagation) {
-      e.stopPropagation();
-    }
-    return false;
+      var mouse = {
+        x: (e.touches !== undefined ? e.touches[0].pageX : e.pageX) - canvas.offsetLeft,
+        y: (e.touches !== undefined ? e.touches[0].pageY : e.pageY) - canvas.offsetTop,
+        isMouseDown: isMouseDown
+      };
+      lastMousePosition.x = mouse.x;
+      lastMousePosition.y = mouse.y;
+      if (instance.mouseXY) instance.mouseXY(mouse);
+    };
+
+    canvas.addEventListener("mousedown", mouseDown, false);
+    canvas.addEventListener("touchstart", mouseDown, false);
+    canvas.addEventListener("mousemove", mouseXY, false);
+    canvas.addEventListener("touchmove", mouseXY, false);
+    canvas.addEventListener("mouseup", mouseUp, false);
+    canvas.addEventListener("touchend", mouseUp, false);
+    canvas.addEventListener("touchcancel", mouseUp, false);
+
+    canvas.ondragstart = function (e) {
+      if (e && e.preventDefault) {
+        e.preventDefault();
+      }
+      if (e && e.stopPropagation) {
+        e.stopPropagation();
+      }
+      return false;
+    };
+
+    canvas.onselectstart = function (e) {
+      if (e && e.preventDefault) {
+        e.preventDefault();
+      }
+      if (e && e.stopPropagation) {
+        e.stopPropagation();
+      }
+      return false;
+    };
+
+    // prevent mobile scaling?
+    document.body.ontouchstart = function (e) {
+      if (e && e.preventDefault) {
+        e.preventDefault();
+      }
+      if (e && e.stopPropagation) {
+        e.stopPropagation();
+      }
+      return false;
+    };
+    document.body.ontouchmove = function (e) {
+      if (e && e.preventDefault) {
+        e.preventDefault();
+      }
+      if (e && e.stopPropagation) {
+        e.stopPropagation();
+      }
+      return false;
+    };
   };
-  document.body.ontouchmove = function (e) {
-    if (e && e.preventDefault) {
-      e.preventDefault();
-    }
-    if (e && e.stopPropagation) {
-      e.stopPropagation();
-    }
-    return false;
+
+  var canvas = document.getElementById("canvas");
+  window.addEventListener("resize", resizeCanvas, false);
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resizeCanvas();
+  var scene = canvas.getContext("2d");
+
+  function random(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  var Circle = function Circle(x, y, color) {
+    this.x = x;
+    this.y = y;
+    this.r = 2;
+    this.maxr = 120;
+    this.color = color;
+    this.remove = false;
+    this.colorStepS = (100 - color.s) / this.maxr;
+    this.colorStepL = (100 - color.l) / this.maxr;
   };
-};
-
-
-var canvas = document.getElementById("canvas");
-window.addEventListener("resize", resizeCanvas, false);
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-resizeCanvas();
-var scene = canvas.getContext("2d");
-
-function random(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-var Circle = function Circle(x, y, color) {
-  var _this = this;
-
-  this.x = x;
-  this.y = y;
-  this.r = 2;
-  this.maxr = 120;
-  this.remove = false;
-
-  this.colorStepS = (100 - color.s) / this.maxr;
-  this.colorStepL = (100 - color.l) / this.maxr;
-
-  this.step = function () {
-    _this.r++;
-    if (_this.r > _this.maxr) {
-      _this.remove = true;
+  Circle.prototype.step = function () {
+    this.r++;
+    if (this.r > this.maxr) {
+      this.remove = true;
     }
   };
-
-  this.render = function () {
+  Circle.prototype.render = function () {
     scene.beginPath();
-    scene.arc(_this.x, _this.y, _this.r, 0, 2 * Math.PI, false);
-    var hsl = "hsl(" + color.h + ", " + (color.s + _this.colorStepS * _this.r) + "%, " + (color.l + _this.colorStepL * _this.r) + "%)";
+    scene.arc(this.x, this.y, this.r, 0, 2 * Math.PI, false);
+    var hsl = "hsl(" + this.color.h + ", " + (this.color.s + this.colorStepS * this.r) + "%, " + (this.color.l + this.colorStepL * this.r) + "%)";
     scene.strokeStyle = hsl;
     scene.lineWidth = 2;
     scene.stroke();
     scene.closePath();
   };
-};
 
-var Clicks = function Clicks(dots) {
-  var _this2 = this;
+  var Clicks = function Clicks(dots) {
+    var _this = this;
 
-  this.game; // injected
+    this.game; // injected
 
-  var objects = [];
-  var hue = 180;
+    var objects = [];
+    var hue = 180;
 
-  this.mouseDown = function (mouse) {
-    _this2.mouseXY(mouse);
+    this.mouseDown = function (mouse) {
+      _this.mouseXY(mouse);
+    };
+
+    this.mouseXY = function (mouse) {
+      if (mouse.isMouseDown) {
+        var color = { h: hue++, s: 75, l: 75 };
+        if (hue == 360) hue = 0;
+        objects.push(new Circle(mouse.x, mouse.y, color));
+      }
+    };
+
+    this.step = function () {
+      objects.forEach(function (o) {
+        return o.step();
+      });
+      objects = objects.filter(function (o) {
+        return !o.remove;
+      });
+    };
+
+    this.render = function () {
+      scene.clearRect(0, 0, canvas.width, canvas.height);
+      objects.forEach(function (o) {
+        return o.render();
+      });
+    };
+
+    this.start = function () {
+      // todo
+    };
   };
 
-  this.mouseXY = function (mouse) {
-    if (mouse.isMouseDown) {
-      var color = { h: hue++, s: 75, l: 75 };
-      if (hue == 360) hue = 0;
-      objects.push(new Circle(mouse.x, mouse.y, color));
-    }
-  };
+  var clicks = new Clicks(scene);
+  var game = new Game(canvas, clicks, 60);
 
-  this.step = function () {
-    objects.forEach(function (o) {
-      return o.step();
-    });
-    objects = objects.filter(function (o) {
-      return !o.remove;
-    });
-  };
-
-  this.render = function () {
-    scene.clearRect(0, 0, canvas.width, canvas.height);
-    objects.forEach(function (o) {
-      return o.render();
-    });
-  };
-
-  this.start = function () {
-    // todo
-  };
-};
-
-var clicks = new Clicks(scene);
-var game = new Game(canvas, clicks, 60);
-
-game.run();
+  game.run();
 </script>
 </body>
 </html>
